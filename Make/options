@@ -1,0 +1,16 @@
+VTK_VERSION = 6.0
+VTK_INCLUDE=/usr/include/vtk-$(VTK_VERSION)
+VTK_LIBS=/usr/lib
+
+EXE_INC = \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(VTK_INCLUDE)
+
+
+EXE_LIBS = \
+    -lmeshTools \
+    -lfiniteVolume \
+    -L$(VTK_LIBS) \
+    -lvtkIOImage-$(VTK_VERSION) \
+    -lvtkIOXML-$(VTK_VERSION)
