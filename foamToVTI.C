@@ -11,6 +11,41 @@
 #include "fvCFD.H"
 #include "volPointInterpolation.H"
 
+vtkDoubleArray*
+createDoubleArray(const std::string& name, const size_t length, const size_t components = 1)
+{
+    vtkDoubleArray* a = vtkDoubleArray::New();
+    a->SetName(name.c_str());
+    a->SetNumberOfComponents(components);
+    a->SetNumberOfTuples(length);
+    a->Allocate(length);
+
+    double* value = new double[components];
+    for (size_t i = 0; i < components; i++)
+        value[i] = 0;
+
+    for (size_t i = 0; i < length; i++)
+        a->InsertTuple(i, value);
+
+    delete[] value;
+    return a;
+}
+
+vtkUnsignedCharArray*
+createBlankingArray(const size_t length)
+{
+    vtkUnsignedCharArray* a = vtkUnsignedCharArray::New();
+    a->SetName("blanking");
+    a->SetNumberOfComponents(1);
+    a->SetNumberOfTuples(length);
+    a->Allocate(length);
+
+    for (size_t i = 0; i < length; i++)
+        a->InsertTuple1(i, -1);
+
+    return a;
+}
+
 vtkUniformGrid*
 createUniformGrid(const boundBox& bounds, const double h)
 {
@@ -29,68 +64,16 @@ createUniformGrid(const boundBox& bounds, const double h)
     image->SetSpacing(dX, dY, dZ);
     image->SetOrigin(bounds.min().x(), bounds.min().y(), bounds.min().z());
 
-    vtkDoubleArray* imgU = vtkDoubleArray::New();
-    imgU->SetName("U");
-    imgU->SetNumberOfComponents(3);
-    imgU->SetNumberOfTuples(image->GetNumberOfCells());
-    imgU->Allocate(image->GetNumberOfCells());
-    image->GetCellData()->SetVectors(imgU);
+    const vtkIdType nCells = image->GetNumberOfCells();
+    image->GetCellData()->SetVectors(createDoubleArray("U", nCells, 3));
+    image->GetCellData()->SetVectors(createDoubleArray("p", nCells, 1));
+    image->GetCellData()->SetVectors(createBlankingArray(nCells));
 
-    vtkDoubleArray* imgP = vtkDoubleArray::New();
-    imgP->SetName("p");
-    imgP->SetNumberOfComponents(1);
-    imgP->SetNumberOfTuples(image->GetNumberOfCells());
-    imgP->Allocate(image->GetNumberOfCells());
-    image->GetCellData()->SetScalars(imgP);
+    const vtkIdType nPoints = image->GetNumberOfPoints();
+    image->GetPointData()->SetVectors(createDoubleArray("U", nPoints, 3));
+    image->GetPointData()->SetVectors(createDoubleArray("p", nPoints, 1));
+    image->GetPointData()->SetVectors(createBlankingArray(nPoints));
 
-    vtkUnsignedCharArray* blankCells = vtkUnsignedCharArray::New();
-    blankCells->SetName("cell blanking");
-    blankCells->SetNumberOfComponents(1);
-    blankCells->SetNumberOfTuples(image->GetNumberOfCells());
-    blankCells->Allocate(image->GetNumberOfCells());
-    image->GetCellData()->AddArray(blankCells);
-    image->SetCellVisibilityArray(blankCells);
-
-    if (image->GetCellBlanking())
-        std::cout << "blanking set\n";
-    else
-        std::cout << "blanking NOT set\n";
-
-    for (vtkIdType i = 0; i < image->GetNumberOfCells(); i++)
-    {
-        imgU->InsertTuple3(i, 0, 0, 0);
-        imgP->InsertTuple1(i, 0);
-        blankCells->InsertTuple1(i, -1); // All cells visible
-    }
-
-    vtkDoubleArray* pU = vtkDoubleArray::New();
-    pU->SetName("U");
-    pU->SetNumberOfComponents(3);
-    pU->SetNumberOfTuples(image->GetNumberOfPoints());
-    pU->Allocate(image->GetNumberOfPoints());
-    image->GetPointData()->SetVectors(pU);
-
-    vtkDoubleArray* pP = vtkDoubleArray::New();
-    pP->SetName("p");
-    pP->SetNumberOfComponents(1);
-    pP->SetNumberOfTuples(image->GetNumberOfPoints());
-    pP->Allocate(image->GetNumberOfPoints());
-    image->GetPointData()->SetScalars(pP);
-
-    vtkUnsignedCharArray* blankPoints = vtkUnsignedCharArray::New();
-    blankPoints->SetName("blanking");
-    blankPoints->SetNumberOfComponents(1);
-    blankPoints->SetNumberOfTuples(image->GetNumberOfPoints());
-    blankPoints->Allocate(image->GetNumberOfPoints());
-    image->GetPointData()->AddArray(blankPoints);
-    image->SetPointVisibilityArray(blankPoints);
-
-    for (vtkIdType i = 0; i < image->GetNumberOfPoints(); i++)
-    {
-        pU->InsertTuple3(i, 0, 0, 0);
-        pP->InsertTuple1(i, 0);
-        blankPoints->InsertTuple1(i, -1);    // All points visible
-    }
     return image;
 }
 
