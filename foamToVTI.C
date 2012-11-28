@@ -65,14 +65,19 @@ createUniformGrid(const boundBox& bounds, const double h)
     image->SetOrigin(bounds.min().x(), bounds.min().y(), bounds.min().z());
 
     const vtkIdType nCells = image->GetNumberOfCells();
-    image->GetCellData()->SetVectors(createDoubleArray("U", nCells, 3));
-    image->GetCellData()->SetVectors(createDoubleArray("p", nCells, 1));
-    image->GetCellData()->SetVectors(createBlankingArray(nCells));
+    image->GetCellData()->AddArray(createDoubleArray("U", nCells, 3));
+    image->GetCellData()->AddArray(createDoubleArray("p", nCells, 1));
+    image->GetCellData()->AddArray(createBlankingArray(nCells));
+    image->GetCellData()->SetActiveVectors("U");
+    image->GetCellData()->SetActiveScalars("p");
 
     const vtkIdType nPoints = image->GetNumberOfPoints();
-    image->GetPointData()->SetVectors(createDoubleArray("U", nPoints, 3));
-    image->GetPointData()->SetVectors(createDoubleArray("p", nPoints, 1));
-    image->GetPointData()->SetVectors(createBlankingArray(nPoints));
+    image->GetPointData()->AddArray(createDoubleArray("U", nPoints, 3));
+    image->GetPointData()->AddArray(createDoubleArray("p", nPoints, 1));
+    image->GetPointData()->AddArray(createBlankingArray(nPoints));
+
+    image->GetPointData()->SetActiveVectors("U");
+    image->GetPointData()->SetActiveScalars("p");
 
     return image;
 }
