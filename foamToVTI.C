@@ -66,15 +66,22 @@ createUniformGrid(const boundBox& bounds, const double h)
 
     const vtkIdType nCells = image->GetNumberOfCells();
     image->GetCellData()->AddArray(createDoubleArray("U", nCells, 3));
+    image->GetCellData()->GetVectors("U")->Delete();
     image->GetCellData()->AddArray(createDoubleArray("p", nCells, 1));
+    image->GetCellData()->GetScalars("p")->Delete();
     image->GetCellData()->AddArray(createBlankingArray(nCells));
+    image->GetCellData()->GetScalars("blanking")->Delete();
+
     image->GetCellData()->SetActiveVectors("U");
     image->GetCellData()->SetActiveScalars("p");
 
     const vtkIdType nPoints = image->GetNumberOfPoints();
     image->GetPointData()->AddArray(createDoubleArray("U", nPoints, 3));
+    image->GetPointData()->GetVectors("U")->Delete();
     image->GetPointData()->AddArray(createDoubleArray("p", nPoints, 1));
+    image->GetPointData()->GetScalars("p")->Delete();
     image->GetPointData()->AddArray(createBlankingArray(nPoints));
+    image->GetPointData()->GetScalars("blanking")->Delete();
 
     image->GetPointData()->SetActiveVectors("U");
     image->GetPointData()->SetActiveScalars("p");
@@ -182,6 +189,8 @@ int main(int argc, char *argv[])
     }
 
     Info<< endl;
+
+    image->Delete();
 
     return EXIT_SUCCESS;
 }
