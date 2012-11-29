@@ -1,4 +1,4 @@
 *.sw[op]
 html
-*/Make/*
-*/*.dep
+Make/*
+*.dep
