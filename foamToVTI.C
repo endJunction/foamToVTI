@@ -162,17 +162,49 @@ int main(int argc, char *argv[])
         volVectorField U(Uheader, mesh);
         pointVectorField pointU = interpolateVolPoint.interpolate(U);
 
-        for (label cellI = 0; cellI < mesh.nCells(); cellI++)
+        vtkDataArray* cU = image->GetCellData()->GetVectors("U");
+        if (!cU)
         {
-            double coords[3] = { cellCenters[cellI].x(), cellCenters[cellI].y(), cellCenters[cellI].z() };
+            std::cerr << "Cells' vector U not defined.\n";
+            return EXIT_FAILURE;
+        }
+
+        vtkDataArray* cP = image->GetCellData()->GetScalars("p");
+        if (!cP)
+        {
+            std::cerr << "Cells' scalars p not defined.\n";
+            return EXIT_FAILURE;
+        }
+
+        vtkDataArray* pU = image->GetPointData()->GetVectors("U");
+        if (!pU)
+        {
+            std::cerr << "Points' vector U not defined.\n";
+            return EXIT_FAILURE;
+        }
+
+        vtkDataArray* const pP = image->GetPointData()->GetScalars("p");
+        if (!pP)
+        {
+            std::cerr << "Points' scalars p not defined.\n";
+            return EXIT_FAILURE;
+        }
+
+        for (label i = 0; i < mesh.nCells(); i++)
+        {
+            double coords[3]
+                = { cellCenters[i].x(),
+                    cellCenters[i].y(),
+                    cellCenters[i].z() };
             int subId = 0;
             double pcoords[3];
             double weights[8];  // For 3D image cell has 8 points.
+
             const vtkIdType cellId
                 = image->FindCell(coords, 0, 0, 1e-8, subId, pcoords, weights);
 
-            image->GetCellData()->GetVectors("U")->SetTuple(cellId, &(U[cellI][0]));
-            image->GetCellData()->GetScalars("p")->SetTuple(cellId, &p[cellI]);
+            cU->SetTuple(cellId, &(U[i][0]));
+            cP->SetTuple(cellId, &(p[i]));
             image->UnBlankCell(cellId);
         }
 
@@ -181,8 +213,8 @@ int main(int argc, char *argv[])
             const vtkIdType id = image->FindPoint(
                     pointCoords[i].x(), pointCoords[i].y(), pointCoords[i].z());
 
-            image->GetPointData()->GetVectors("U")->SetTuple(id, &(pointU[i][0]));
-            image->GetPointData()->GetScalars("p")->SetTuple(id, &pointP[i]);
+            pU->SetTuple(id, &(pointU[i][0]));
+            pP->SetTuple(id, &pointP[i]);
             image->UnBlankPoint(id);
         }
         writeImage(image, runTime.timeName());
