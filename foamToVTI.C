@@ -47,7 +47,8 @@ createBlankingArray(const size_t length)
 }
 
 vtkUniformGrid*
-createUniformGrid(const boundBox& bounds, const double h)
+createUniformGrid(const boundBox& bounds, const double h,
+    const bool createPointData = true)
 {
     vtkUniformGrid* image = vtkUniformGrid::New();
 
@@ -74,6 +75,9 @@ createUniformGrid(const boundBox& bounds, const double h)
 
     image->GetCellData()->SetActiveVectors("U");
     image->GetCellData()->SetActiveScalars("p");
+
+    if (!createPointData)
+        return image;
 
     const vtkIdType nPoints = image->GetNumberOfPoints();
     image->GetPointData()->AddArray(createDoubleArray("U", nPoints, 3));
@@ -102,6 +106,12 @@ writeImage(vtkUniformGrid * const image, const std::string& timeName)
 
 int main(int argc, char *argv[])
 {
+    argList::addBoolOption
+    (
+        "internalPoints",
+        "save point data too. Default is to save cell data only"
+    );
+
     timeSelector::addOptions();
 
     #include "setRootCase.H"
@@ -113,7 +123,10 @@ int main(int argc, char *argv[])
 
     runTime.setTime(timeDirs.last(), timeDirs.size()-1);
 
-    vtkUniformGrid* image = createUniformGrid(mesh.bounds(), 1./32);
+    const bool saveInternalPoints = args.optionFound("internalPoints");
+
+    vtkUniformGrid* image
+        = createUniformGrid(mesh.bounds(), 1./32, saveInternalPoints);
     std::cout << *image << std::endl;
 
     const volVectorField& cellCenters = mesh.C();
@@ -176,19 +189,6 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         }
 
-        vtkDataArray* pU = image->GetPointData()->GetVectors("U");
-        if (!pU)
-        {
-            std::cerr << "Points' vector U not defined.\n";
-            return EXIT_FAILURE;
-        }
-
-        vtkDataArray* const pP = image->GetPointData()->GetScalars("p");
-        if (!pP)
-        {
-            std::cerr << "Points' scalars p not defined.\n";
-            return EXIT_FAILURE;
-        }
 
         for (label i = 0; i < mesh.nCells(); i++)
         {
@@ -208,14 +208,31 @@ int main(int argc, char *argv[])
             image->UnBlankCell(cellId);
         }
 
-        for (label i = 0; i < mesh.nPoints(); i++)
+        if (saveInternalPoints)
         {
-            const vtkIdType id = image->FindPoint(
-                    pointCoords[i].x(), pointCoords[i].y(), pointCoords[i].z());
+            vtkDataArray* pU = image->GetPointData()->GetVectors("U");
+            if (!pU)
+            {
+                std::cerr << "Points' vector U not defined.\n";
+                return EXIT_FAILURE;
+            }
 
-            pU->SetTuple(id, &(pointU[i][0]));
-            pP->SetTuple(id, &pointP[i]);
-            image->UnBlankPoint(id);
+            vtkDataArray* pP = image->GetPointData()->GetScalars("p");
+            if (!pP)
+            {
+                std::cerr << "Points' scalars p not defined.\n";
+                return EXIT_FAILURE;
+            }
+
+            for (label i = 0; i < mesh.nPoints(); i++)
+            {
+                const vtkIdType id = image->FindPoint(
+                        pointCoords[i].x(), pointCoords[i].y(), pointCoords[i].z());
+
+                pU->SetTuple(id, &(pointU[i][0]));
+                pP->SetTuple(id, &pointP[i]);
+                image->UnBlankPoint(id);
+            }
         }
         writeImage(image, runTime.timeName());
     }
