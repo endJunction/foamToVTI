@@ -112,6 +112,13 @@ int main(int argc, char *argv[])
         "save point data too. Default is to save cell data only"
     );
 
+    argList::addOption
+    (
+        "resolution",
+        "integer",
+        "resolution of target image (default 32)"
+    );
+
     timeSelector::addOptions();
 
     #include "setRootCase.H"
@@ -125,8 +132,11 @@ int main(int argc, char *argv[])
 
     const bool saveInternalPoints = args.optionFound("internalPoints");
 
+    const unsigned int resolution = args.optionLookupOrDefault("resolution", 32);
+    Info << "Set image resolution to " << resolution << nl << endl;
+
     vtkUniformGrid* image
-        = createUniformGrid(mesh.bounds(), 1./32, saveInternalPoints);
+        = createUniformGrid(mesh.bounds(), 1./resolution, saveInternalPoints);
     std::cout << *image << std::endl;
 
     const volVectorField& cellCenters = mesh.C();
